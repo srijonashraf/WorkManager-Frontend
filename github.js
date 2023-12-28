@@ -1,0 +1,1 @@
+const GitAuthHandlerFromFireBase = 'https://workmanager-4446a.firebaseapp.com/__/auth/handler';
