@@ -1,22 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { Container, Card, Row, Col, Button, Modal } from "react-bootstrap";
-import {
-    AllTask,
-    DeleteTask,
-    UpdateTaskStatus,
-    UpdateTaskData,
-} from "../apiRequest/apiRequest";
-import { errorToast, successToast } from "../helper/ToasterHelper";
+import { errorToast, successToast } from "../../helper/ToasterHelper.js";
 import { Toaster } from "react-hot-toast";
 import ReactQuill from "react-quill";
-import QuillToolbar from "../utility/ReactQuillModules";
+import QuillToolbar from "../../utility/ReactQuillModules.js";
+import WorkStore from '../../store/Work/WorkStore.js';
 
 const AllTaskList = () => {
-    const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [selectedTaskId, setSelectedTaskId] = useState(null);
-    const [selectedTaskIdForUpdate, setSelectedTaskIdForUpdate] = useState(null);
     const [selectedTaskStatus, setSelectedTaskStatus] = useState("Done");
     const [showEditModal, setShowEditModal] = useState(false);
     const [change, setChange] = useState(0);
@@ -25,93 +18,56 @@ const AllTaskList = () => {
         workDescription: "",
     });
 
+    const {
+        WorkAllList,
+        WorkAllListRequest,
+        WorkUpdateRequest,
+        WorkStatusUpdateRequest,
+        WorkDeleteRequest,
+    } = WorkStore((state) => ({
+        WorkAllList: state.WorkAllList,
+        WorkAllListRequest: state.WorkAllListRequest,
+        WorkUpdateRequest: state.WorkUpdateRequest,
+        WorkUpdate: state.WorkUpdate,
+        WorkStatusUpdateRequest: state.WorkStatusUpdateRequest,
+        WorkStatusUpdate: state.WorkStatusUpdate,
+        WorkDeleteRequest: state.WorkDeleteRequest,
+    }));
+
     useEffect(() => {
+        setLoading(true);
         (async () => {
-            FetchAllTasks();
+            await WorkAllListRequest();
+            const { WorkAllList } = WorkStore.getState();
         })();
+        setLoading(false);
     }, [change]);
 
-
-    //Fetch all the tasks
-    const FetchAllTasks = async () => {
-        try {
-            setLoading(true);
-            const response = await AllTask();
-
-            if (response && response.data && response.status === 200) {
-                setTasks(response.data.data);
-            } else {
-                console.error("Invalid response format:", response);
-                setTasks([]);
-            }
-        } catch (error) {
-            console.error("Failed to fetch tasks", error);
-            setTasks([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    //Delete task using id
-    const DeleteTaskRequest = async (id) => {
-        try {
-            const response = await DeleteTask(id);
-            if (response) {
-                successToast("Task deleted successfully");
-                setChange(new Date().getTime());
-            } else {
-                errorToast("Failed to delete task");
-            }
-        } catch (err) {
-            console.log(err);
-        }
-    };
-
-    //Update task status
-    const HandleUpdateStatus = () => {
+    const HandleUpdateStatus = async () => {
         if (selectedTaskId) {
-            UpdateTaskStatusRequest(selectedTaskId, selectedTaskStatus);
-            setShowStatusModal(false);
-        }
-    };
-
-    const UpdateTaskStatusRequest = async (taskId, status) => {
-        try {
-            const response = await UpdateTaskStatus(taskId, status);
-            if (response) {
+            await WorkStatusUpdateRequest(selectedTaskId, selectedTaskStatus);
+            const { WorkStatusUpdate } = WorkStore.getState();
+            if (WorkStatusUpdate) {
                 successToast("Task status updated");
                 setChange(new Date().getTime());
             } else {
                 errorToast("Failed to update");
             }
-        } catch (err) {
-            console.error(err);
+            setShowStatusModal(false);
         }
     };
 
-    //Edit Task
-
-    const HandleUpdateTask = () => {
-        if (selectedTaskIdForUpdate) {
-            UpdateTaskRequest(selectedTaskIdForUpdate, editableFields);
-            setShowEditModal(false);
-        }
-    };
-
-    const UpdateTaskRequest = async (selectedTaskIdForUpdate, editableFields) => {
-        try {
-            const response = await UpdateTaskData(
-                selectedTaskIdForUpdate,
-                editableFields
-            );
-            if (response) {
+    const HandleUpdateTask = async () => {
+        if (selectedTaskId) {
+            await WorkUpdateRequest(selectedTaskId, editableFields);
+            const { WorkUpdate } = WorkStore.getState();
+            if (WorkUpdate) {
                 successToast("Task updated successfully");
                 setChange(new Date().getTime());
             } else {
                 errorToast("Failed to update task");
             }
-        } catch (err) {
-            console.log(err);
+            setShowEditModal(false);
         }
     };
 
@@ -123,12 +79,12 @@ const AllTaskList = () => {
                     <Col className="mb-3">
                         <p>Loading...</p>
                     </Col>
-                ) : tasks.length === 0 ? (
+                ) : WorkAllList.length === 0 ? (
                     <Col className="mb-3">
                         <h4 className="animated flash">No task here!</h4>
                     </Col>
                 ) : (
-                    tasks.map((task) => (
+                    WorkAllList.map((task) => (
                         <Col key={task._id} className="mb-3">
                             <Card className="h-100 shadow border-0 d-flex flex-column">
                                 <Card.Body className="d-flex flex-column">
@@ -160,7 +116,6 @@ const AllTaskList = () => {
                                                         {task.workStatus}
                                                     </Button>
 
-                                                    {/* Update Task Status Modal */}
                                                     <Modal
                                                         show={showStatusModal}
                                                         onHide={() => setShowStatusModal(false)}
@@ -204,24 +159,21 @@ const AllTaskList = () => {
                                         <Button
                                             className="btn-sm rounded-1 btn-dark me-2"
                                             onClick={() => {
-                                                const taskDetails = tasks.find(
-                                                    (t) => t._id === task._id
-                                                );
-
-                                                if (taskDetails) {
-                                                    setEditableFields({
-                                                        workTitle: taskDetails.workTitle,
-                                                        workDescription: taskDetails.workDescription,
-                                                    });
-                                                    setShowEditModal(true);
-                                                    setSelectedTaskIdForUpdate(task._id);
-                                                }
+                                                setEditableFields({
+                                                    workTitle: task.workTitle,
+                                                    workDescription: task.workDescription,
+                                                });
+                                                setShowEditModal(true);
+                                                setSelectedTaskId(task._id);
                                             }}
                                         >
                                             Edit
                                         </Button>
                                         <Button
-                                            onClick={() => DeleteTaskRequest(task._id)}
+                                            onClick={() => {
+                                                WorkDeleteRequest(task._id);
+                                                setChange(new Date().getTime());
+                                            }}
                                             className="btn-sm rounded-1 btn-danger"
                                         >
                                             Delete
@@ -237,7 +189,6 @@ const AllTaskList = () => {
                 )}
             </Row>
 
-            {/* Edit Task Modal */}
             <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
                 <Modal.Header closeButton>
                     <Modal.Title>Edit Task</Modal.Title>

@@ -1,5 +1,5 @@
 import React from "react";
-import AllTaskList from "../components/AllTaskList.jsx";
+import AllTaskList from "../components/Tasks/AllTaskList.jsx";
 
 const TaskListPage = () => {
   return (

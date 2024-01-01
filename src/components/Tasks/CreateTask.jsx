@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Container,
@@ -6,31 +6,41 @@ import {
   FormControl,
   Button,
 } from "react-bootstrap";
-import { AddNewTask } from "../apiRequest/apiRequest";
-import { successToast, errorToast } from "../helper/ToasterHelper";
+import { successToast, errorToast } from "../../helper/ToasterHelper.js";
 import { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import ReactQuill from "react-quill";
-import QuillToolbar from "../utility/ReactQuillModules";
+import QuillToolbar from "../../utility/ReactQuillModules.js";
+import WorkStore from '../../store/Work/WorkStore.js';
 
 const CreateTask = () => {
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDescription, setTaskDescription] = useState("");
   const [loading, setLoading] = useState(false); // Initialize loading as false
   const navigate = useNavigate();
-  const handleAddTask = async () => {
+
+  const { WorkCreateRequest } = WorkStore((state) => ({
+    WorkCreateRequest: state.WorkCreateRequest,
+  }));
+
+  useEffect(() => {
+    setLoading(true);
+    (async () => {
+      await WorkCreateRequest();
+    })();
+    setLoading(false);
+  }, []);
+  const HandleCreateNewTask = async () => {
     try {
       if (!taskTitle || !taskDescription) {
         errorToast("Please fill all the field.");
         return;
       }
-
-      setLoading(true); // Set loading to true when adding task
-      const success = await AddNewTask(taskTitle, taskDescription);
-
-      if (success) {
+      setLoading(true);
+      await WorkCreateRequest(taskTitle, taskDescription);
+      const { WorkCreate } = WorkStore.getState();
+      if (WorkCreate) {
         successToast("New task added");
-
         setTimeout(() => {
           navigate("/allTask");
         }, 1000);
@@ -43,10 +53,9 @@ const CreateTask = () => {
       console.error(error);
       errorToast("An error occurred while adding the task");
     } finally {
-      // Reset input fields after adding the task or handling the error
       setTaskTitle("");
       setTaskDescription("");
-      setLoading(false); // Set loading back to false after completing the task addition
+      setLoading(false);
     }
   };
 
@@ -80,7 +89,7 @@ const CreateTask = () => {
                 Task Adding...
               </Button>
             ) : (
-              <Button onClick={handleAddTask}>Add Task</Button>
+              <Button onClick={HandleCreateNewTask}>Add Task</Button>
             )}
           </Card.Body>
         </Card>

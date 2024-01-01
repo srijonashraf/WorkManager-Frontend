@@ -1,5 +1,5 @@
 import React from 'react';
-import CreateTask from '../components/CreateTask';
+import CreateTask from '../components/Tasks/CreateTask.jsx';
 
 const NewTaskPage = () => {
   return (

@@ -7,7 +7,6 @@ import '../src/assets/css/animate.min.css'
 import '../src/assets/css/dropdownmenu.css'
 import 'react-quill/dist/quill.snow.css'
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
+  <App />
+
 )

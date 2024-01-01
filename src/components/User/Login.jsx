@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from "react";
-import { UserLogin, GoogleSignIn } from "../apiRequest/apiRequest.js";
+import React, { useState } from "react";
 import {
   Container,
   Form,
@@ -8,38 +7,35 @@ import {
   Button,
 } from "react-bootstrap";
 import { Row, Col } from "react-bootstrap";
-import { successToast, errorToast } from "../helper/ToasterHelper.js";
+import { successToast, errorToast } from "../../helper/ToasterHelper.js";
 import { Toaster } from "react-hot-toast";
-import { NavLink, useNavigate } from "react-router-dom";
-import { Auth, Provider } from "../../firebase.js";
+import { NavLink } from "react-router-dom";
+import { Auth, Provider } from "../../../firebase.js";
 import { signInWithPopup } from "firebase/auth";
-import { FcGoogle } from "react-icons/fc";
+
 import { FaGoogle } from "react-icons/fa";
-import { getExpireMessage,setExpireMessage } from "../helper/SessionHelper.js";
+import {
+  setToken,
+  setUserEmail,
+} from "../../helper/SessionHelper.js";
+import UserStore from "./../../store/Employee/UserStore";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [validationError, setValidationError] = useState(false);
-  const [googleAuthValue, setGoogleAuthValue] = useState({
-    email: "",
-    firstName: "",
-    lastName: "",
-  });
-  // const navigate = useNavigate();
+  const { UserLogin, UserLoginRequest, UserGoogleSignInRequest, UserGoogleSignIn } = UserStore((state) => ({
+    UserLoginRequest: state.UserLoginRequest,
+    UserLogin: state.UserLogin,
+    UserGoogleSignInRequest: state.UserGoogleSignInRequest,
+    UserGoogleSignIn: state.UserGoogleSignIn,
+  }));
 
-  useEffect(() => {
-    if (getExpireMessage()) {
-      errorToast('Session Expired. Please login again');
-      setExpireMessage(false);
-    }
-  }, [getExpireMessage()]);
-
-
-  const UserLoginRequest = async (e) => {
+  const HandleUserLogIn = async (e) => {
     e.preventDefault();
 
+    setLoading(true);
     try {
       if (email.length === 0 || password.length === 0) {
         errorToast("Please fill in all the fields");
@@ -47,27 +43,28 @@ const Login = () => {
         return;
       }
 
-      setLoading(true);
-      const success = await UserLogin(email, password);
-      if (success) {
-        setTimeout(() => {
-          window.location.href = "/";
-        }, 1000);
+      // Call the UserLoginRequest function from the store
+      await UserLoginRequest(email, password);
+
+      // After the asynchronous operation, get the updated state
+      const { UserLogin } = UserStore.getState();
+
+      // Check the response and update state accordingly
+      if (UserLogin && UserLogin.length > 0) {
+        setToken(UserLogin[0].token);
+        setUserEmail(UserLogin[0].email);
         successToast("Login successful");
+        window.location.href = "/dashboard";
       } else {
         errorToast("User not found");
         setValidationError(true);
       }
     } catch (error) {
+      console.error("HandleUserLogIn error:", error);
       errorToast("Failed to connect to the server");
-      console.error(error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const HandleInputFocus = () => {
-    setValidationError(false);
   };
 
   const HandleGoogleSignIn = async () => {
@@ -76,28 +73,25 @@ const Login = () => {
 
       const result = await signInWithPopup(Auth, Provider);
       const displayName = result.user.displayName;
-
-      // Extract first and last names
       const nameParts = displayName.split(" ");
       const firstName = nameParts[0];
       const lastName = nameParts.slice(1).join(" ");
 
-      // Set state values
-      setGoogleAuthValue({
+      // Using async/await directly without .then()
+      await UserGoogleSignInRequest({
         email: result.user.email,
         firstName: firstName,
         lastName: lastName,
       });
 
-      const success = await GoogleSignIn({
-        email: result.user.email,
-        firstName: firstName,
-        lastName: lastName,
-      });
-
-      if (success) {
+      const { UserGoogleSignIn } = UserStore.getState();
+      // Check the response and update state accordingly
+      if (UserGoogleSignIn && UserGoogleSignIn.length > 0) {
+        setToken(UserGoogleSignIn[0].token);
+        setUserEmail(UserGoogleSignIn[0].email);
         successToast("Login successful");
-        window.location.href = "/";
+        window.location.href = "/dashboard";
+        console.log(JSON.stringify(UserGoogleSignIn));
       }
     } catch (error) {
       errorToast("Failed to connect to the server");
@@ -107,6 +101,9 @@ const Login = () => {
     }
   };
 
+  const HandleInputFocus = () => {
+    setValidationError(false);
+  };
 
   return (
     <div>
@@ -120,7 +117,7 @@ const Login = () => {
             className="card p-4 border-0 shadow rounded-4 mx-auto" // Add mx-auto for centering
           >
             <Form
-              onSubmit={UserLoginRequest}
+              onSubmit={HandleUserLogIn}
               className="animated fadeInUp card-body"
             >
               <h4 className="mb-3">SIGN IN</h4>
@@ -146,7 +143,7 @@ const Login = () => {
                 />
               </InputGroup>
               <Button
-                onClick={UserLoginRequest}
+                onClick={HandleUserLogIn}
                 variant="primary"
                 type="submit"
                 className="w-100 mb-3 rounded-1"
