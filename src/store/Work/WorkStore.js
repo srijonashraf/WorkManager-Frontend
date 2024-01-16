@@ -1,22 +1,18 @@
-import axios from "axios";
+import axios, { Axios } from "axios";
 import { create } from "zustand";
 import Config from "../../utility/Config";
 import { getToken } from "../../helper/SessionHelper";
 
+const AxiosHeader = { headers: { token: getToken() } };
 const BASE_URL = Config.BASE_URL;
 const WorkStore = create((set) => ({
-  WorkCreate: [],
-  WorkAllList: [],
-  WorkListByStatus: [],
-  WorkStatusCountIndividual: [],
-  WorkStatusUpdate: [],
-  WorkUpdate: [],
-  WorkDelete: [],
-
-  // Function to get the latest Axios headers with the token
-  getAxiosHeaders: () => ({
-    headers: { token: getToken() },
-  }),
+  WorkCreate: null,
+  WorkAllList: null,
+  WorkListByStatus: null,
+  WorkStatusCountIndividual: null,
+  WorkStatusUpdate: null,
+  WorkUpdate: null,
+  WorkDelete: null,
 
   WorkCreateRequest: async (workTitle, workDescription) => {
     const postBody = {
@@ -24,112 +20,65 @@ const WorkStore = create((set) => ({
       workDescription: workDescription,
       workStatus: "Pending",
     };
-    try {
-      let res = await axios.post(
-        `${BASE_URL}/WorkCreate`,
-        postBody,
-        WorkStore.getState().getAxiosHeaders()
-      );
-      if (res.data["status"] === "success") {
-        set({ WorkCreate: res.data["data"] });
-      }
-    } catch (error) {
-      console.error("Error creating work:", error);
+
+    let res = await axios.post(`${BASE_URL}/WorkCreate`, postBody, AxiosHeader);
+    if (res.data["status"] === "success") {
+      set({ WorkCreate: res.data["data"] });
     }
   },
 
   WorkAllListRequest: async () => {
-    try {
-      let res = await axios.get(
-        `${BASE_URL}/WorkAllList`,
-        WorkStore.getState().getAxiosHeaders()
-      );
-      if (res.data["status"] === "success") {
-        set({ WorkAllList: res.data["data"] });
-        console.log(res.data.data);
-      }
-    } catch (error) {
-      console.error("Error fetching all works:", error);
+    let res = await axios.get(`${BASE_URL}/WorkAllList`, AxiosHeader);
+    if (res.data["status"] === "success") {
+      set({ WorkAllList: res.data["data"] });
     }
   },
 
   WorkListByStatusRequest: async (status) => {
-    try {
-      let res = await axios.get(
-        `${BASE_URL}/WorkListByStatus/${status}`,
-        WorkStore.getState().getAxiosHeaders()
-      );
-      if (res.data["status"] === "success") {
-        set({ WorkListByStatus: res.data["data"] });
-      }
-    } catch (error) {
-      console.error("Error fetching works by status:", error);
+    let res = await axios.get(
+      `${BASE_URL}/WorkListByStatus/${status}`,
+      AxiosHeader
+    );
+    if (res.data["status"] === "success") {
+      set({ WorkListByStatus: res.data["data"] });
     }
   },
 
   WorkStatusCountIndividualRequest: async () => {
-    try {
-      let res = await axios.get(
-        `${BASE_URL}/WorkStatusCountIndividual`,
-        WorkStore.getState().getAxiosHeaders()
-      );
-      if (res.data["status"] === "success") {
-        set((state) => ({
-          ...state,
-          WorkStatusCountIndividual: res.data["data"],
-        }));
-      }
-    } catch (error) {
-      console.error("Error fetching WorkStatusCountIndividual:", error);
+    let res = await axios.get(
+      `${BASE_URL}/WorkStatusCountIndividual`,
+      AxiosHeader
+    );
+    if (res.data["status"] === "success") {
+      set({ WorkStatusCountIndividual: res.data["data"] });
     }
   },
 
   WorkStatusUpdateRequest: async (id, status) => {
-    try {
-      let res = await axios.get(
-        `${BASE_URL}/WorkStatusUpdate/${id}/${status}`,
-        WorkStore.getState().getAxiosHeaders()
-      );
-      if (res.data["status"] === "success") {
-        set({ WorkStatusUpdate: res.data["data"] });
-      }
-    } catch (error) {
-      console.error("Error updating work status:", error);
+    let res = await axios.get(
+      `${BASE_URL}/WorkStatusUpdate/${id}/${status}`,
+      AxiosHeader
+    );
+    if (res.data["status"] === "success") {
+      set({ WorkStatusUpdate: res.data["data"] });
     }
   },
 
   WorkUpdateRequest: async (id, updatedFields) => {
-    try {
-      let res = await axios.post(
-        `${BASE_URL}/WorkUpdate/${id}`,
-        updatedFields,
-        WorkStore.getState().getAxiosHeaders()
-      );
-      if (res.data["status"] === "success") {
-        set({ WorkUpdate: res.data["data"] });
-      }
-      console.log(res.data);
-    } catch (error) {
-      console.error(
-        "Error updating work:",
-        error.response ? error.response.data : error.message
-      );
+    let res = await axios.post(
+      `${BASE_URL}/WorkUpdate/${id}`,
+      updatedFields,
+      AxiosHeader
+    );
+    if (res.data["status"] === "success") {
+      set({ WorkUpdate: res.data["data"] });
     }
   },
 
   WorkDeleteRequest: async (id) => {
-    try {
-      let res = await axios.get(
-        `${BASE_URL}/WorkDelete/${id}`,
-        WorkStore.getState().getAxiosHeaders()
-      );
-      if (res.data["status"] === "success") {
-        set((state) => ({
-          WorkDelete: [...state.WorkDelete, res.data["data"]],
-        }));
-      }
-    } catch (error) {
-      console.error("Error deleting work:", error);
+    let res = await axios.get(`${BASE_URL}/WorkDelete/${id}`, AxiosHeader);
+    if (res.data["status"] === "success") {
+      set({ WorkDelete: res.data["data"] });
     }
   },
 }));

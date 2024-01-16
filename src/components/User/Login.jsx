@@ -25,12 +25,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [validationError, setValidationError] = useState(false);
-  const { UserLogin, UserLoginRequest, UserGoogleSignInRequest, UserGoogleSignIn } = UserStore((state) => ({
-    UserLoginRequest: state.UserLoginRequest,
-    UserLogin: state.UserLogin,
-    UserGoogleSignInRequest: state.UserGoogleSignInRequest,
-    UserGoogleSignIn: state.UserGoogleSignIn,
-  }));
+  const { UserLoginRequest, UserGoogleSignInRequest } = UserStore();
 
   const HandleUserLogIn = async (e) => {
     e.preventDefault();
@@ -45,14 +40,11 @@ const Login = () => {
 
       // Call the UserLoginRequest function from the store
       await UserLoginRequest(email, password);
-
-      // After the asynchronous operation, get the updated state
       const { UserLogin } = UserStore.getState();
-
       // Check the response and update state accordingly
-      if (UserLogin && UserLogin.length > 0) {
-        setToken(UserLogin[0].token);
-        setUserEmail(UserLogin[0].email);
+      if (UserLogin !== null) {
+        setToken(UserLogin.token);
+        setUserEmail(UserLogin.email);
         successToast("Login successful");
         window.location.href = "/dashboard";
       } else {
@@ -77,7 +69,6 @@ const Login = () => {
       const firstName = nameParts[0];
       const lastName = nameParts.slice(1).join(" ");
 
-      // Using async/await directly without .then()
       await UserGoogleSignInRequest({
         email: result.user.email,
         firstName: firstName,
@@ -85,13 +76,13 @@ const Login = () => {
       });
 
       const { UserGoogleSignIn } = UserStore.getState();
-      // Check the response and update state accordingly
-      if (UserGoogleSignIn && UserGoogleSignIn.length > 0) {
-        setToken(UserGoogleSignIn[0].token);
-        setUserEmail(UserGoogleSignIn[0].email);
+
+      if (UserGoogleSignIn !== null) {
+        console.log(UserGoogleSignIn)
+        setToken(UserGoogleSignIn.token);
+        setUserEmail(UserGoogleSignIn.email);
         successToast("Login successful");
         window.location.href = "/dashboard";
-        console.log(JSON.stringify(UserGoogleSignIn));
       }
     } catch (error) {
       errorToast("Failed to connect to the server");

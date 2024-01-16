@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { Container, Card, Row, Col, Button } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import unauthorized from "../../utility/unauthorized.js";
+import ProfileStore from "../../store/Employee/ProfileStore.js";
+import WorkStore from "../../store/Work/WorkStore.js";
+import UserStore from "../../store/Employee/UserStore.js";
 import {
-  setExpireMessage,
   setNewUser,
   setOTPEmail,
   setToken,
 } from "../../helper/SessionHelper.js";
 import { errorToast, successToast } from "../../helper/ToasterHelper.js";
 import { Toaster } from "react-hot-toast";
-import ProfileStore from "../../store/Employee/ProfileStore.js";
-import WorkStore from "../../store/Work/WorkStore.js";
-import UserStore from "../../store/Employee/UserStore.js";
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(false);
@@ -20,19 +18,15 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   const {
-    WorkStatusCountIndividualRequest,
-  } = WorkStore((state) => ({
-    WorkStatusCountIndividualRequest: state.WorkStatusCountIndividualRequest
-  }));
+    WorkStatusCountIndividual,
+  } = WorkStore();
   const {
-    ProfileDetailsRequest,
-  } = ProfileStore((state) => ({
-    ProfileDetailsRequest: state.ProfileDetailsRequest,
-  }));
+    ProfileDetails,
+  } = ProfileStore();
 
-  const { RecoverVerifyEmailRequest } = UserStore((state) => ({
-    RecoverVerifyEmailRequest: state.RecoverVerifyEmailRequest
-  }));
+  const {
+    RecoverVerifyEmailRequest
+  } = UserStore();
 
   const formattedTime = currentTime.toLocaleTimeString(undefined, {
     hour12: true,
@@ -50,37 +44,23 @@ const Dashboard = () => {
     return () => clearInterval(intervalId);
   }, []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        await WorkStatusCountIndividualRequest();
-        await ProfileDetailsRequest();
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-
-    fetchData();
-  }, [WorkStatusCountIndividualRequest, ProfileDetailsRequest]);
-
-  const { WorkStatusCountIndividual } = WorkStore.getState();
-  const { ProfileDetails } = ProfileStore.getState();
   const HandleVerifyButton = async () => {
     setLoading(true);
-    await RecoverVerifyEmailRequest(ProfileDetails[0].email);
-    const { RecoverVerifyEmail } = UserStore.getState();
+
     try {
-      if (RecoverVerifyEmail && RecoverVerifyEmail.length > 0) {
+      let response = await RecoverVerifyEmailRequest(ProfileDetails?.email);
+
+      if (response.status === 200) {
         successToast("Verification code sent to your email");
         setNewUser(true);
-        setOTPEmail(ProfileDetails[0].email);
+        setOTPEmail(ProfileDetails?.email);
         setToken("");
         window.location.href = "/verifyOTP";
       } else {
         errorToast("Failed to send verification code");
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error while verifying email:", error);
     } finally {
       setLoading(false);
     }
@@ -89,7 +69,7 @@ const Dashboard = () => {
   return (
     <div>
       <Toaster position="bottom-center" />
-      {ProfileDetails[0]?.verified === false ? (
+      {ProfileDetails && ProfileDetails.length > 0 && !ProfileDetails.verified ? (
         <Container
           id="top"
           className="container-fluid d-flex flex-row gap-2 align-items-center bg-danger text-white"
@@ -101,7 +81,6 @@ const Dashboard = () => {
             variant="outline-light"
             onClick={HandleVerifyButton}
           >
-            {" "}
             {loading ? "Loading..." : "Verify"}
           </Button>
         </Container>
@@ -112,8 +91,7 @@ const Dashboard = () => {
               <div>
                 Hi!{" "}
                 <span className="h4">
-                  {`(${ProfileDetails[0]?.firstName || ""} ${ProfileDetails[0]?.lastName || ""
-                    }) `}
+                  {`(${ProfileDetails.firstName || ""} ${ProfileDetails.lastName || ""}) `}
                   <span className="blog-title-emoji">👋</span>
                 </span>
               </div>

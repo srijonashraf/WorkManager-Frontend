@@ -11,7 +11,6 @@ import {
 } from "react-bootstrap";
 import { successToast, errorToast } from "../../helper/ToasterHelper";
 import { Toaster } from "react-hot-toast";
-import { BiUserCircle } from "react-icons/bi";
 import { getBase64, validateFile } from "../../helper/FormHelper";
 import Avatar from "react-avatar";
 import ProfileStore from './../../store/Employee/ProfileStore';
@@ -29,46 +28,44 @@ const Profile = () => {
         address: "",
     });
 
-    const { ProfileDetailsRequest, ProfileUpdateRequest } = ProfileStore((state) => ({
-        ProfileDetailsRequest: state.ProfileDetailsRequest,
-        ProfileUpdateRequest: state.ProfileUpdateRequest
-    }));
+    const { ProfileDetailsRequest, ProfileUpdateRequest, ProfileDetails, ProfileUpdate } = ProfileStore();
+    // const { ProfileDetails } = ProfileStore.getState();
+    // const { ProfileUpdate } = ProfileStore.getState();
+
 
     let userImgRef = useRef();
     let userImgView = useRef();
 
     useEffect(() => {
         const fetchProfileDetails = async () => {
-            try {
-                await ProfileDetailsRequest();
-                const { ProfileDetails } = await ProfileStore.getState();
-                if (
-                    ProfileDetails &&
-                    ProfileDetails.length > 0
-                ) {
-
-                    const userDetails = ProfileDetails[0];
-                    setFormValues({
-                        email: userDetails.email,
-                        img: userDetails.img,
-                        firstName: userDetails.firstName,
-                        lastName: userDetails.lastName,
-                        mobile: userDetails.mobile,
-                        currentPassword: "",
-                        newPassword: "",
-                        address: userDetails.address,
-                    });
-                } else {
-                    console.log("Frontend: Profile Details failed to fetch");
-                }
-            } catch (error) {
-                console.error("Error fetching profile details:", error);
+          try {
+            await ProfileDetailsRequest();
+      
+            if (!ProfileDetails) {
+              await ProfileUpdateRequest();
+              console.log("Frontend: Profile Details fetched successfully");
+              const userDetails = ProfileDetails;
+              setFormValues({
+                email: userDetails.email,
+                img: userDetails.img,
+                firstName: userDetails.firstName,
+                lastName: userDetails.lastName,
+                mobile: userDetails.mobile,
+                currentPassword: "",
+                newPassword: "",
+                address: userDetails.address,
+              });
+            } else {
+              console.log("Frontend: Profile Details failed to fetch");
             }
+          } catch (error) {
+            console.error("Error fetching profile details:", error);
+          }
         };
-
+      
         fetchProfileDetails();
-    }, []);
-
+      }, [ProfileUpdateRequest]);
+      
     const handleImageChange = (e) => {
         const file = e.target.files[0];
 
@@ -89,9 +86,9 @@ const Profile = () => {
                     userImgRef.current.value = null;
                 }
             } catch (error) {
-                // Handle validation errors
+
                 console.error(error.message);
-                // Optionally, you can reset the input or show an error message to the user
+
             }
         }
     };
@@ -120,9 +117,8 @@ const Profile = () => {
 
     const UpdateProfileRequest = async () => {
         try {
-            const { ProfileDetails } = ProfileStore.getState();
             const passwordFromDB =
-                (ProfileDetails[0]?.password) || "";
+                (ProfileDetails.password) || "";
 
             if (
                 !formValues.email ||
@@ -150,13 +146,12 @@ const Profile = () => {
                     mobile: formValues.mobile,
                     password: formValues.newPassword || passwordFromDB,
                     address: formValues.address,
-                    position: ProfileDetails[0]?.position,
-                    department: ProfileDetails[0]?.department,
+                    position: ProfileDetails.position,
+                    department: ProfileDetails.department,
                 };
 
                 await ProfileUpdateRequest(updatedProfile);
-                const { ProfileUpdate } = ProfileStore.getState();
-                if (ProfileUpdate && ProfileUpdate.length > 0) {
+                if (ProfileUpdate !== null) {
                     successToast("Profile Updated Successfully!");
 
                     setTimeout(() => {

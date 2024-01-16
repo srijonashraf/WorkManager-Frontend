@@ -6,21 +6,18 @@ import { getToken } from "../../helper/SessionHelper";
 const AxiosHeader = { headers: { token: getToken() } };
 const BASE_URL = Config.BASE_URL;
 const ProfileStore = create((set) => ({
-  ProfileDetails: [],
-  ProfileUpdate: [],
-  ProfileVerification: [],
-  ProfileDelete: [],
+  ProfileDetails: null,
+  ProfileUpdate: null,
+  ProfileVerification: null,
+  ProfileDelete: null,
 
   ProfileDetailsRequest: async () => {
-    try {
-      let res = await axios.get(`${BASE_URL}/ProfileDetails`, AxiosHeader);
-      if (res.data["status"] === "success") {
-        set((state) => ({
-          ProfileDetails: [...state.ProfileDetails, res.data.data[0]],
-        }));
-      }
-    } catch (error) {
-      console.error("ProfileDetailsRequest error:", error);
+    let res = await axios.get(`${BASE_URL}/ProfileDetails`, AxiosHeader);
+    if (res.data["status"] === "success") {
+      set({
+        ProfileDetails: res.data.data[0],
+      });
+      console.log(res.data.data[0]);
     }
   },
 
@@ -31,20 +28,18 @@ const ProfileStore = create((set) => ({
       AxiosHeader
     );
     if (res.data["status"] === "success") {
-      set((state) => ({
-        ProfileUpdate: [...state.ProfileUpdate, res.data.status],
-      }));
-      console.log("From Store:", res.data.status);
+      set({
+        ProfileUpdate: res.data.status,
+      });
     }
   },
 
   ProfileVerificationRequest: async (email) => {
     let res = await axios.get(`${BASE_URL}/ProfileVerification/${email}`);
-    console.log(email);
     if (res.data["status"] === "success") {
-      set((state) => ({
-        ProfileVerification: [...state.ProfileVerification, res.data.status],
-      }));
+      set({
+        ProfileVerification: res.data.status,
+      });
     }
   },
 
@@ -54,9 +49,9 @@ const ProfileStore = create((set) => ({
       AxiosHeader
     );
     if (res.data["status"] === "success") {
-      set((state) => ({
-        ProfileDelete: [...state.ProfileDelete, res.data.status],
-      }));
+      set({
+        ProfileDelete: res.data.status,
+      });
     }
   },
 }));

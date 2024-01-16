@@ -5,7 +5,6 @@ import { clearSessions } from "../../helper/SessionHelper.js";
 import { NavLink } from "react-router-dom";
 import { BiUserCircle } from "react-icons/bi";
 import { RiMenuUnfoldFill } from "react-icons/ri";
-import { IoSettingsOutline } from "react-icons/io5";
 import Dropdown from "react-bootstrap/Dropdown";
 import { CiLogout } from "react-icons/ci";
 import ProfileStore from "../../store/Employee/ProfileStore";
@@ -28,14 +27,14 @@ const AppNavbar = () => {
   }));
 
 
-  useEffect(() => {
+  // useEffect(() => {
 
-    (async () => {
-      ProfileDetailsRequest();
-      await ProfileDetails;
-    })();
+  //   (async () => {
+  //     await ProfileDetailsRequest();
 
-  }, []);
+  //   })();
+
+  // }, [ProfileDetails]);
 
   return (
     <div className={`app-container ${showOffcanvas ? "offcanvas-open" : ""}`}>
@@ -82,12 +81,6 @@ const AppNavbar = () => {
                 </h6>
                 <Dropdown.Divider />
               </div>
-
-              {/* <Dropdown.Item className="d-flex align-items-center gap-1">
-                <NavLink className="nav-link" to="/profile">
-                  <IoSettingsOutline /> Setting
-                </NavLink>
-              </Dropdown.Item> */}
               <Dropdown.Item
                 className="d-flex align-items-center gap-1"
                 onClick={clearSessions}
